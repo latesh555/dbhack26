@@ -1,34 +1,39 @@
 package com.regintel.ai.common.controller;
 
 import com.regintel.ai.common.dto.RegulationAnalysisModel;
+import com.regintel.ai.common.dto.StepDetailsModel;
 import com.regintel.ai.common.services.RegulationAnalysissService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
-//@RequiredArgsConstructor
 public class HomePage {
-//    @RestController
-//    @RequiredArgsConstructor
-//    public class RegulationAnalysisController {
-        private final RegulationAnalysissService regulationAnalysissService;
+
+    private final RegulationAnalysissService regulationAnalysissService;
 
     public HomePage(RegulationAnalysissService regulationAnalysissService) {
         this.regulationAnalysissService = regulationAnalysissService;
     }
 
     @GetMapping("/analysis/{reqId}")
-        public ResponseEntity<RegulationAnalysisModel> getRegulationAnalysis(@PathVariable Long reqId) {
+    public ResponseEntity<RegulationAnalysisModel> getRegulationAnalysis(
+            @PathVariable Long reqId) {
 
-            RegulationAnalysisModel response =
-                    regulationAnalysissService.getRegulationAnalysis(reqId);
+        RegulationAnalysisModel response =
+                regulationAnalysissService.getRegulationAnalysis(reqId);
 
-            return ResponseEntity.ok(response);
-        }
+        return ResponseEntity.ok(response);
+    }
 
-//    }
+    @GetMapping("/step-details/{reqId}")
+    public ResponseEntity<List<StepDetailsModel>> getStepDetails(
+            @PathVariable Long reqId) {
+
+        List<StepDetailsModel> response =
+                regulationAnalysissService.getStepDetails(reqId);
+
+        return ResponseEntity.ok(response);
+    }
 }
