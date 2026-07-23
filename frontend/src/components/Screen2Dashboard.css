@@ -95,7 +95,7 @@
 /* Cards */
 .s2-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 220px;
   gap: 20px;
 }
 
@@ -376,7 +376,7 @@
 /* Actions */
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
   gap: 12px;
 }
 

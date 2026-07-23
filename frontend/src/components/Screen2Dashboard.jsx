@@ -65,9 +65,8 @@ export default function Screen2Dashboard({ navigate }) {
                 { label: 'Document Type', value: 'OFAC Sanctions Update', cls: '' },
                 { label: 'Published', value: '22 July 2026', cls: '' },
                 { label: 'Effective', value: 'Immediate', cls: 'effective' },
+                { label: 'Deadline', value: '31 Oct 2026', cls: '' },
                 { label: 'Severity', value: '🔴 Critical', cls: 'critical' },
-                { label: 'AI Confidence', value: '98%', cls: '' },
-                { label: 'New Entities', value: '42 Added', cls: 'effective' },
               ].map((m, i) => (
                 <div key={i} className="meta-item">
                   <span className="meta-label">{m.label}</span>
@@ -94,14 +93,14 @@ export default function Screen2Dashboard({ navigate }) {
               </div>
               <div className="impact-grid">
                 {[
-                  { icon: '💻', label: 'Affected Apps', val: 12, color: 'color-blue' },
-                  { icon: '⚙️', label: 'Microservices', val: 27, color: 'color-purple' },
-                  { icon: '🔌', label: 'APIs Impacted', val: 31, color: 'color-amber' },
-                  { icon: '🗄️', label: 'Databases', val: 8, color: 'color-red' },
-                  { icon: '👥', label: 'Business Teams', val: 6, color: 'color-green' },
-                  { icon: '📁', label: 'Repositories', val: 19, color: 'color-blue' },
-                  { icon: '🔗', label: 'Dependencies', val: 134, color: 'color-purple' },
-                  { icon: '📋', label: 'Change Requests', val: 23, color: 'color-amber' },
+                  { icon: '💻', label: 'Applications Impacted', val: 20, color: 'color-blue' },
+                  { icon: '📉', label: 'Trade Finance', val: 'High', color: 'color-red' },
+                  { icon: '📑', label: 'SWIFT Gateway', val: 'Low', color: 'color-green' },
+                  { icon: '💳', label: 'AML Monitoring', val: 'Low', color: 'color-green' },
+                  { icon: '🧾', label: 'Trade Settlement', val: 8, color: 'color-purple' },
+                  { icon: '💱', label: 'Payment Flows', val: 55, color: 'color-blue' },
+                  { icon: '🏦', label: 'Readiness Score', val: '68%', color: 'color-amber' },
+                  { icon: '💶', label: 'Compliance Cost', val: '€348', color: 'color-amber' },
                 ].map((c, i) => (
                   <div key={i} className={`impact-chip ${c.color}`}>
                     <span className="impact-chip-icon">{c.icon}</span>
@@ -109,16 +108,6 @@ export default function Screen2Dashboard({ navigate }) {
                     <span className="impact-chip-label">{c.label}</span>
                   </div>
                 ))}
-              </div>
-              {/* Architecture graph */}
-              <div className="arch-section">
-                <div className="arch-header">
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gray-700)' }}>Architecture Dependency Graph</span>
-                  <button className="view-btn">View Full Graph →</button>
-                </div>
-                <div className="arch-container">
-                  <ArchGraph />
-                </div>
               </div>
             </div>
 
@@ -227,7 +216,7 @@ export default function Screen2Dashboard({ navigate }) {
               <div className="card-header">
                 <div className="card-title-row">
                   <span className="card-icon">🔥</span>
-                  <h2 className="card-title">Enterprise Risk Heatmap</h2>
+                  <h2 className="card-title">Risk Heatmap</h2>
                   <span className="card-badge critical-badge" style={{ fontSize: 12, padding: '4px 12px' }}>Risk Score: 94/100 Critical</span>
                 </div>
               </div>
@@ -277,13 +266,18 @@ export default function Screen2Dashboard({ navigate }) {
               </div>
             </div>
 
-            {/* Section 6 — Recommended Actions */}
+            
+          </div>
+
+          {/* Sidebar */}
+          <div className="s2-sidebar">
+            
+{/* Section 6 — Recommended Actions */}
             <div className="s2-card animate-fadein">
               <div className="card-header">
                 <div className="card-title-row">
                   <span className="card-icon">⚡</span>
                   <h2 className="card-title">Recommended Actions</h2>
-                  <span className="sparkle-badge">✦ AI-Powered</span>
                 </div>
               </div>
               <div className="actions-grid">
@@ -299,77 +293,7 @@ export default function Screen2Dashboard({ navigate }) {
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="s2-sidebar">
-            {/* AI Recommendations */}
-            <div className="sidebar-card animate-fadein">
-              <div className="sidebar-header">
-                <span className="sidebar-icon">🤖</span>
-                <span className="sidebar-title">AI Recommendations</span>
-              </div>
-              <div className="sidebar-recs">
-                {recommendations.map((r, i) => (
-                  <div key={i} className={`rec-item rec-color-${r.color}`}>
-                    <div className="rec-priority-badge">{r.priority}</div>
-                    <div className="rec-content">
-                      <div className="rec-text">{r.text}</div>
-                      <div className="rec-confidence">
-                        <div className="confidence-bar">
-                          <div className="confidence-fill" style={{ width: `${r.confidence}%`, background: r.bar }} />
-                        </div>
-                        <span className="confidence-val">{r.confidence}%</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Document Intel */}
-            <div className="sidebar-card animate-fadein">
-              <div className="sidebar-header">
-                <span className="sidebar-icon">📄</span>
-                <span className="sidebar-title">Document Intelligence</span>
-              </div>
-              <div className="doc-intel">
-                {[
-                  { label: 'Issuing Authority', value: 'OFAC / US Treasury', cls: '' },
-                  { label: 'Jurisdiction', value: 'Global', cls: '' },
-                  { label: 'Document ID', value: 'SDN-2026-07-22', cls: '' },
-                  { label: 'Pages Analyzed', value: '148 pages', cls: '' },
-                  { label: 'Entities Matched', value: '42 new entities', cls: 'red-val' },
-                  { label: 'Sanctions Lists', value: 'SDN, CAPTA, NS-MBS', cls: '' },
-                  { label: 'Compliance Score', value: '94 / 100', cls: 'red-val' },
-                  { label: 'Analysis Time', value: '2 min 34 sec', cls: 'green-val' },
-                ].map((row, i) => (
-                  <div key={i} className="intel-row">
-                    <span className="intel-label">{row.label}</span>
-                    <span className={`intel-value ${row.cls}`}>{row.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Activity Feed */}
-            <div className="sidebar-card animate-fadein">
-              <div className="sidebar-header">
-                <span className="sidebar-icon">📡</span>
-                <span className="sidebar-title">Live Activity</span>
-              </div>
-              <div className="activity-feed">
-                {activities.map((a, i) => (
-                  <div key={i} className="activity-item">
-                    <div className={`activity-dot ${a.type}`}></div>
-                    <div>
-                      <div className="activity-text">{a.text}</div>
-                      <div className="activity-time">{a.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          
           </div>
         </div>
       </div>
@@ -381,7 +305,7 @@ function ConfidenceDial({ value }) {
   const angle = (value / 100) * 180
   return (
     <div style={{ textAlign: 'center' }}>
-      <svg width="140" height="80" viewBox="0 0 140 80">
+      <svg width="140" height="90" viewBox="0 0 140 80">
         <path d="M 15 70 A 55 55 0 0 1 125 70" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" strokeLinecap="round" />
         <path d="M 15 70 A 55 55 0 0 1 125 70" fill="none" stroke="url(#dialGrad)" strokeWidth="12" strokeLinecap="round"
           strokeDasharray={`${(value / 100) * 172.8} 172.8`} />
@@ -395,7 +319,6 @@ function ConfidenceDial({ value }) {
         <text x="70" y="68" textAnchor="middle" fill="white" fontSize="22" fontWeight="800">{value}%</text>
         <text x="70" y="82" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="10">AI Confidence</text>
       </svg>
-      <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>CRITICAL Severity</div>
     </div>
   )
 }
