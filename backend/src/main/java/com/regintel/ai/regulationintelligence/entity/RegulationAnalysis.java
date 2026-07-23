@@ -46,4 +46,7 @@ public class RegulationAnalysis extends BaseEntity {
 
     @Column(name = "analyzed_at")
     private LocalDateTime analyzedAt;
+
+    @Column(name = "intelligence_payload", columnDefinition = "TEXT")
+    private String intelligencePayload;
 }

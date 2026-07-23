@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS regulation_analyses (
     risk_level          VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
     status              VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     analyzed_at         TIMESTAMP,
+    intelligence_payload TEXT,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -59,6 +60,43 @@ CREATE TABLE IF NOT EXISTS impact_assessments (
 
 CREATE INDEX IF NOT EXISTS idx_impact_assessments_analysis_id ON impact_assessments(regulation_analysis_id);
 CREATE INDEX IF NOT EXISTS idx_impact_assessments_severity ON impact_assessments(severity);
+
+CREATE TABLE IF NOT EXISTS enterprise_impact_assessments (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    regulation_id           UUID NOT NULL REFERENCES regulations(id) ON DELETE CASCADE,
+    regulation_analysis_id  UUID NOT NULL REFERENCES regulation_analyses(id) ON DELETE CASCADE,
+    status                  VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    analyzed_at             TIMESTAMP,
+    compliance_risk_summary TEXT,
+    risk_heatmap            TEXT,
+    error_message           TEXT,
+    created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_enterprise_impact_assessments_regulation_id
+    ON enterprise_impact_assessments(regulation_id);
+CREATE INDEX IF NOT EXISTS idx_enterprise_impact_assessments_status
+    ON enterprise_impact_assessments(status);
+
+CREATE TABLE IF NOT EXISTS enterprise_impact_items (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    assessment_id   UUID NOT NULL REFERENCES enterprise_impact_assessments(id) ON DELETE CASCADE,
+    category        VARCHAR(50) NOT NULL,
+    component_name  VARCHAR(255) NOT NULL,
+    component_type  VARCHAR(50) NOT NULL,
+    reason          TEXT NOT NULL,
+    severity        VARCHAR(50) NOT NULL,
+    confidence      DECIMAL(5, 4) NOT NULL,
+    evidence        TEXT NOT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_enterprise_impact_items_assessment_id
+    ON enterprise_impact_items(assessment_id);
+CREATE INDEX IF NOT EXISTS idx_enterprise_impact_items_category
+    ON enterprise_impact_items(category);
 
 -- ============================================================
 -- Engineering Planning Module

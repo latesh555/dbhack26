@@ -111,7 +111,22 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 | GET    | `/analyses/{id}`                              | Get by ID         |
 | PUT    | `/analyses/{id}`                              | Update            |
 
-### Enterprise Impact
+### Enterprise Impact Analyst Agent
+
+Consumes **structured `RegulatoryIntelligence` JSON** from a completed regulation analysis (`intelligence_payload` column). Uses a deterministic mock enterprise knowledge base to produce a full impact assessment.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/regulations/{regulationId}/enterprise-impact/analyze` | Start impact analysis |
+| GET | `/regulations/{regulationId}/enterprise-impact` | Get latest assessment |
+| GET | `/regulations/{regulationId}/enterprise-impact/applications` | Impacted applications |
+| GET | `/regulations/{regulationId}/enterprise-impact/customers` | Impacted customers |
+| GET | `/regulations/{regulationId}/enterprise-impact/transactions` | Impacted transactions |
+| GET | `/regulations/{regulationId}/enterprise-impact/risk-heatmap` | Risk heatmap |
+
+**Prerequisite:** A `regulation_analyses` record with `status=COMPLETED` and valid `intelligence_payload` JSON matching the `RegulatoryIntelligence` schema.
+
+### Enterprise Impact (Legacy CRUD)
 
 | Method | Endpoint                              | Description        |
 |--------|---------------------------------------|--------------------|
