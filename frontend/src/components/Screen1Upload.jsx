@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Screen1Upload.css";
 
 const recentUploads = [
@@ -30,6 +30,20 @@ const recentUploads = [
     time: "5d ago",
     icon: "📊",
   },
+];
+
+const loadingSteps = [
+  "Uploading the file",
+  "Scanning the file",
+  "Generating a summary",
+  "Analyzing the impact",
+  "Mapping Enterprise Impact",
+  "Analyzing Customer and Transaction Impact",
+  "Calculating Business Impact",
+  "Engineering Impact",
+  "Creating Risk Heatmap",
+  "Calculating Overall Severity",
+  "Generating Report",
 ];
 
 const fileTypes = [
@@ -160,14 +174,33 @@ export default function Screen1Upload({ navigate }) {
   const [dragging, setDragging] = useState(false);
   const [url, setUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
 
   const handleAnalyze = () => {
     setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
-      navigate(2);
-    }, 6000);
+    // setTimeout(() => {
+    //   setAnalyzing(false);
+    //   navigate(2);
+    // }, 6000);
   };
+
+  useEffect(() => {
+    if (!analyzing) {
+      setLoadingStep(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setLoadingStep((prev) => {
+        if (prev >= loadingSteps.length - 1) {
+          return prev; // Stay on the last step
+        }
+        return prev + 1;
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [analyzing]);
 
   return (
     <div className="s1-root">
@@ -228,10 +261,10 @@ export default function Screen1Upload({ navigate }) {
             onClick={handleAnalyze}
           >
             {analyzing ? (
-              <>
+              <div className="spinner-area">
                 <div className="cta-spinner"></div>
-                Analyzing with AI...
-              </>
+                <span>{loadingSteps[loadingStep]}...</span>
+              </div>
             ) : (
               <div>
                 <div className="dropzone-icon">

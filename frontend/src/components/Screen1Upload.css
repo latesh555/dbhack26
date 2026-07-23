@@ -274,9 +274,15 @@
   width: 18px;
   height: 18px;
   border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
+  border-top-color: black;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
+}
+
+.spinner-area{
+  display: flex;
+  gap: 5px;
+  flex-direction: row;
 }
 
 /* Trust */

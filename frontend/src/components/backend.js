@@ -1,4 +1,6 @@
-const uploadDoc=(file)=>{
+import axios from "axios";
+const getRecentUploads=()=>{
+    const link ="";
     
 }
 
