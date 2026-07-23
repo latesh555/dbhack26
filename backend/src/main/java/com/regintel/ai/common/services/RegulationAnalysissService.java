@@ -1,8 +1,7 @@
 package com.regintel.ai.common.services;
 
 import com.regintel.ai.common.dto.*;
-import com.regintel.ai.common.entity.StepDetails;
-import com.regintel.ai.common.repository.StepDetailsRepository;
+import com.regintel.ai.common.dto.StepDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -53,10 +52,10 @@ public class RegulationAnalysissService {
         );
     }
 
-    public List<StepDetailsModel> getStepDetails(Long reqId) {
+    public List<StepDetailsModel> getStepDetails() {
 
         List<StepDetails> stepDetails =
-                stepDetailsRepository.findByReqId(reqId);
+                stepDetailsRepository.findAll();
 
         return stepDetails.stream()
                 .map(step -> new StepDetailsModel(

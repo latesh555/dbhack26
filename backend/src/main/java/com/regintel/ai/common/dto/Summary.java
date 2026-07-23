@@ -1,5 +1,6 @@
 package com.regintel.ai.common.dto;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -18,20 +19,23 @@ public class Summary {
     @Id
     private Long reqId;
     private String type;
+    private String name;
     private String published;
     private String effectiveDate;
     private String deadline;
     private String severity;
     private Double confidence;
+    @Column(length = 1000)
     private String summary;
 
     public Summary() {
     }
 
-    public Summary(String type, String published, String effectiveDate,
+    public Summary(String type, String name, String published, String effectiveDate,
                    String deadline, String severity,
                    Double confidence, String summary) {
         this.type = type;
+        this.name = name;
         this.published = published;
         this.effectiveDate = effectiveDate;
         this.deadline = deadline;

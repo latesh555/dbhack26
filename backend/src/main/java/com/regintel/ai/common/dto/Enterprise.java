@@ -22,6 +22,9 @@ public class Enterprise {
     private Integer customerOnboardingHours;
     private Integer tradeSettlementsAffected;
     private String amlMonitoring;
+    private String paymentFlows;
+    private String readinessScore;
+    private String complianceCost;
 
     public Enterprise() {
     }

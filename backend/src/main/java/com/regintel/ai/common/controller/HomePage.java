@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+//@CrossOrigin(allowedHeaders = "**")
 public class HomePage {
 
     private final RegulationAnalysissService regulationAnalysissService;
@@ -27,12 +28,11 @@ public class HomePage {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/step-details/{reqId}")
-    public ResponseEntity<List<StepDetailsModel>> getStepDetails(
-            @PathVariable Long reqId) {
+    @GetMapping("/step-details")
+    public ResponseEntity<List<StepDetailsModel>> getStepDetails() {
 
         List<StepDetailsModel> response =
-                regulationAnalysissService.getStepDetails(reqId);
+                regulationAnalysissService.getStepDetails();
 
         return ResponseEntity.ok(response);
     }
