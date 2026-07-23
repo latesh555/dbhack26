@@ -306,3 +306,5 @@ CREATE TABLE IF NOT EXISTS executive_decision_reports (
 
 CREATE INDEX IF NOT EXISTS idx_executive_decision_reports_regulation_id
     ON executive_decision_reports(regulation_id);
+
+
