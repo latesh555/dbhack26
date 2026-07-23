@@ -1,0 +1,19 @@
+.hero-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 420px;
+}
+
+.hero-illustration__svg {
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 1024px) {
+  .hero-illustration {
+    max-width: 320px;
+    margin: 0 auto;
+  }
+}

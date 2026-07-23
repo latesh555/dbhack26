@@ -1,0 +1,42 @@
+.arch-graph {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.arch-graph__svg {
+  width: 100%;
+  height: 200px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.arch-graph__label {
+  font-size: 2.2px;
+  fill: var(--text-secondary);
+  font-family: var(--font-family);
+  font-weight: 500;
+}
+
+.arch-graph__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.arch-graph__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.arch-graph__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
