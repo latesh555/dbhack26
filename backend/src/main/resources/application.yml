@@ -51,4 +51,4 @@ regintel:
     ollama:
       base-url: http://localhost:11434/v1
       model: llama3.2
-    fallback-to-heuristics: true
+    fallback-to-heuristics: false

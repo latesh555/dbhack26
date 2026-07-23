@@ -1,11 +1,9 @@
 package com.regintel.ai.regulationintelligence.agent;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regintel.ai.common.exception.BusinessException;
-import com.regintel.ai.llm.config.LlmProperties;
 import com.regintel.ai.llm.exception.LlmException;
 import com.regintel.ai.llm.service.LlmService;
+import com.regintel.ai.llm.support.LlmJsonParser;
 import com.regintel.ai.regulation.entity.Regulation;
 import com.regintel.ai.regulationintelligence.schema.RegulatoryIntelligence;
 import jakarta.validation.ConstraintViolation;
@@ -23,50 +21,28 @@ import java.util.stream.Collectors;
 public class RegulationIntelligenceAgent {
 
     private final LlmService llmService;
-    private final LlmProperties llmProperties;
-    private final HeuristicRegulationIntelligenceAnalyzer heuristicAnalyzer;
-    private final ObjectMapper objectMapper;
+    private final LlmJsonParser llmJsonParser;
     private final Validator validator;
 
     public RegulatoryIntelligence analyze(Regulation regulation) {
         if (regulation.getRawContent() == null || regulation.getRawContent().isBlank()) {
             throw new BusinessException("Regulation has no content to analyze. Upload a document or provide rawContent.");
         }
-
-        if (llmService.isEnabled() && llmService.hasAvailableProvider()) {
-            try {
-                return analyzeWithLlm(regulation);
-            } catch (Exception ex) {
-                log.warn("LLM analysis failed for regulation {}: {}", regulation.getId(), ex.getMessage());
-                if (!llmProperties.isFallbackToHeuristics()) {
-                    throw ex instanceof BusinessException businessException
-                            ? businessException
-                            : new BusinessException("LLM analysis failed: " + ex.getMessage());
-                }
-            }
-        } else {
-            log.info("No LLM provider available; using heuristic analysis for regulation {}", regulation.getId());
+        if (!llmService.isEnabled() || !llmService.hasAvailableProvider()) {
+            throw new LlmException(
+                    "LLM provider required for regulation intelligence. Set GROQ_API_KEY or GEMINI_API_KEY, or run Ollama.");
         }
 
-        return heuristicAnalyzer.analyze(regulation);
-    }
+        String json = llmService.completeJson(
+                RegulationIntelligencePromptBuilder.systemPrompt(),
+                RegulationIntelligencePromptBuilder.userPrompt(regulation));
 
-    private RegulatoryIntelligence analyzeWithLlm(Regulation regulation) {
-        String systemPrompt = RegulationIntelligencePromptBuilder.systemPrompt();
-        String userPrompt = RegulationIntelligencePromptBuilder.userPrompt(regulation);
+        RegulatoryIntelligence intelligence = llmJsonParser.parse(json, RegulatoryIntelligence.class);
+        enrichFromRegulation(intelligence, regulation);
+        validateIntelligence(intelligence);
 
-        String json = llmService.completeJson(systemPrompt, userPrompt);
-        json = sanitizeJson(json);
-
-        try {
-            RegulatoryIntelligence intelligence = objectMapper.readValue(json, RegulatoryIntelligence.class);
-            enrichFromRegulation(intelligence, regulation);
-            validateIntelligence(intelligence);
-            log.info("LLM regulatory intelligence analysis completed for regulation {}", regulation.getId());
-            return intelligence;
-        } catch (JsonProcessingException ex) {
-            throw new BusinessException("LLM returned invalid JSON: " + ex.getOriginalMessage());
-        }
+        log.info("LLM regulatory intelligence analysis completed for regulation {}", regulation.getId());
+        return intelligence;
     }
 
     private void enrichFromRegulation(RegulatoryIntelligence intelligence, Regulation regulation) {
@@ -90,19 +66,7 @@ public class RegulationIntelligenceAgent {
             String message = violations.stream()
                     .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                     .collect(Collectors.joining("; "));
-            throw new LlmException("LLM output failed validation: " + message);
+            throw new LlmException("LLM regulation intelligence output failed validation: " + message);
         }
-    }
-
-    private String sanitizeJson(String json) {
-        String trimmed = json.trim();
-        if (trimmed.startsWith("```")) {
-            int start = trimmed.indexOf('\n');
-            int end = trimmed.lastIndexOf("```");
-            if (start >= 0 && end > start) {
-                return trimmed.substring(start + 1, end).trim();
-            }
-        }
-        return trimmed;
     }
 }
