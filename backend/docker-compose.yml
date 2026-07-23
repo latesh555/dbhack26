@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: regintel-postgres
+    environment:
+      POSTGRES_DB: regintel
+      POSTGRES_USER: regintel
+      POSTGRES_PASSWORD: regintel
+    ports:
+      - "5432:5432"
+    volumes:
+      - regintel_pg_data:/var/lib/postgresql/data
+      - ./src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regintel -d regintel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  regintel_pg_data:

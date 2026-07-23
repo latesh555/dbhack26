@@ -1,1 +1,189 @@
-Hackathon 2026
+# RegIntel AI — Backend
+
+Agentic AI platform that converts regulatory documents into actionable enterprise impact and engineering plans.
+
+## Tech Stack
+
+- Java 21
+- Spring Boot 3.4.x
+- Maven
+- PostgreSQL 16
+- JPA/Hibernate
+- Lombok
+- Bean Validation
+- SpringDoc OpenAPI (Swagger)
+
+## Project Structure
+
+```
+backend/
+├── pom.xml
+├── docker-compose.yml
+├── src/main/java/com/regintel/ai/
+│   ├── RegIntelAiApplication.java
+│   ├── common/
+│   │   ├── config/          # OpenAPI, JPA auditing
+│   │   ├── dto/             # ApiResponse, ErrorResponse
+│   │   ├── entity/          # BaseEntity
+│   │   └── exception/       # Global exception handling
+│   ├── regulation/          # Regulatory document CRUD
+│   ├── regulationintelligence/  # Regulation analysis
+│   ├── enterpriseimpact/    # Business impact assessments
+│   ├── engineeringplanning/ # Engineering plans & tasks
+│   ├── executivereporting/  # Executive reports
+│   └── agentorchestration/  # Agent workflow orchestration
+└── src/main/resources/
+    ├── application.yml
+    ├── application-dev.yml
+    ├── application-prod.yml
+    └── db/schema.sql
+```
+
+Each domain module follows: `controller` → `service` → `repository` → `entity` + `dto`.
+
+## Prerequisites
+
+- JDK 21
+- Maven 3.9+
+- Docker & Docker Compose (for PostgreSQL)
+
+## Run Instructions
+
+### 1. Start PostgreSQL
+
+```bash
+cd backend
+docker compose up -d
+```
+
+Database: `regintel` | User: `regintel` | Password: `regintel` | Port: `5432`
+
+### 2. Build & Run
+
+```bash
+mvn clean package -DskipTests
+mvn spring-boot:run
+```
+
+Or with a specific profile:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+### 3. Access
+
+| Resource       | URL                              |
+|----------------|----------------------------------|
+| API Base       | http://localhost:8080/api/v1     |
+| Swagger UI     | http://localhost:8080/swagger-ui.html |
+| OpenAPI JSON   | http://localhost:8080/api-docs   |
+
+## Standard API Response
+
+```json
+{
+  "success": true,
+  "message": "Request processed successfully",
+  "data": { },
+  "timestamp": "2026-07-23T17:00:00"
+}
+```
+
+## REST API Contracts
+
+### Regulation
+
+| Method | Endpoint                    | Description          |
+|--------|-----------------------------|----------------------|
+| POST   | `/regulations`              | Create regulation    |
+| GET    | `/regulations`              | List all             |
+| GET    | `/regulations/{id}`         | Get by ID            |
+| PUT    | `/regulations/{id}`         | Update               |
+| DELETE | `/regulations/{id}`         | Delete               |
+
+### Regulation Intelligence
+
+| Method | Endpoint                                      | Description       |
+|--------|-----------------------------------------------|-------------------|
+| POST   | `/regulations/{regulationId}/analyses`        | Create analysis   |
+| GET    | `/regulations/{regulationId}/analyses`        | List by regulation|
+| GET    | `/analyses/{id}`                              | Get by ID         |
+| PUT    | `/analyses/{id}`                              | Update            |
+
+### Enterprise Impact
+
+| Method | Endpoint                              | Description        |
+|--------|---------------------------------------|--------------------|
+| POST   | `/analyses/{analysisId}/impacts`      | Create assessment  |
+| GET    | `/analyses/{analysisId}/impacts`      | List by analysis   |
+| GET    | `/impacts/{id}`                       | Get by ID          |
+| PUT    | `/impacts/{id}`                       | Update             |
+
+### Engineering Planning
+
+| Method | Endpoint                          | Description     |
+|--------|-----------------------------------|-----------------|
+| POST   | `/impacts/{impactId}/plans`       | Create plan     |
+| GET    | `/impacts/{impactId}/plans`       | List plans      |
+| GET    | `/plans/{id}`                     | Get plan        |
+| POST   | `/plans/{planId}/tasks`           | Add task        |
+| GET    | `/plans/{planId}/tasks`           | List tasks      |
+
+### Executive Reporting
+
+| Method | Endpoint                | Description     |
+|--------|-------------------------|-----------------|
+| POST   | `/reports`              | Create report   |
+| GET    | `/reports`              | List all        |
+| GET    | `/reports/{id}`         | Get by ID       |
+| POST   | `/reports/{id}/publish` | Publish report  |
+
+### Agent Orchestration
+
+| Method | Endpoint                        | Description      |
+|--------|---------------------------------|------------------|
+| POST   | `/workflows`                    | Start workflow   |
+| GET    | `/workflows`                    | List all         |
+| GET    | `/workflows/{id}`               | Get by ID        |
+| POST   | `/workflows/{id}/complete`      | Complete workflow|
+| POST   | `/workflows/{workflowId}/tasks` | Add agent task   |
+| GET    | `/workflows/{workflowId}/tasks`   | List tasks       |
+
+## Database Schema
+
+See `src/main/resources/db/schema.sql` for the full PostgreSQL schema with 8 tables:
+
+- `regulations`
+- `regulation_analyses`
+- `impact_assessments`
+- `engineering_plans` / `engineering_tasks`
+- `executive_reports`
+- `agent_workflows` / `agent_tasks`
+
+## Profiles
+
+| Profile | Use Case                          | DDL Mode  |
+|---------|-----------------------------------|-----------|
+| `dev`   | Local development (default)       | `update`  |
+| `prod`  | Production (env vars for DB creds)| `validate`|
+
+## Example: End-to-End Flow
+
+```bash
+# 1. Create a regulation
+curl -X POST http://localhost:8080/api/v1/regulations \
+  -H "Content-Type: application/json" \
+  -d '{"title":"GDPR Article 17","source":"EU","jurisdiction":"EU","documentType":"REGULATION","rawContent":"Right to erasure..."}'
+
+# 2. Start an agent workflow
+curl -X POST http://localhost:8080/api/v1/workflows \
+  -H "Content-Type: application/json" \
+  -d '{"name":"GDPR Processing Pipeline","workflowType":"FULL_ANALYSIS","regulationId":"<regulation-uuid>"}'
+```
+
+## Notes
+
+- AI/agent logic is **not implemented** yet — workflows and tasks are scaffolded for future integration.
+- JPA auditing auto-manages `createdAt` / `updatedAt` timestamps.
+- Validation errors return structured `fieldErrors` in the error response.
