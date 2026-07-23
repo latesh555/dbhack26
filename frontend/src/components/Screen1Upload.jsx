@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import {useNavigate} from "react-router-dom";
 import "./Screen1Upload.css";
+import backend from "./backend";
 
-const recentUploads = [
+const recentUploads1 = [
   {
     name: "OFAC SDN Update July 2026",
     type: "Sanctions",
@@ -164,17 +166,19 @@ const fileTypes = [
 ];
 
 const severityClass = {
-  Critical: "severity-critical",
-  High: "severity-high",
-  Medium: "severity-medium",
-  Low: "severity-low",
+  CRITICAL: "severity-critical",
+  HIGH: "severity-high",
+  MEDIUM: "severity-medium",
+  LOW: "severity-low",
 };
 
-export default function Screen1Upload({ navigate }) {
+export default function Screen1Upload() {
   const [dragging, setDragging] = useState(false);
   const [url, setUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [recentUploads, setRecentUploads]=useState([]);
+  const navigate = useNavigate();
 
   const handleAnalyze = () => {
     setAnalyzing(true);
@@ -183,6 +187,15 @@ export default function Screen1Upload({ navigate }) {
     //   navigate(2);
     // }, 6000);
   };
+
+  const fetchRecentUploadedReports=async()=>{
+    try{
+      const response = await backend.getRecentUploads();
+      setRecentUploads(response.data);
+    }catch(e){
+      console.log(e);
+    }
+  }
 
   useEffect(() => {
     if (!analyzing) {
@@ -197,10 +210,14 @@ export default function Screen1Upload({ navigate }) {
         }
         return prev + 1;
       });
-    }, 5000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [analyzing]);
+
+  useEffect(()=>{
+    fetchRecentUploadedReports();
+  },[])
 
   return (
     <div className="s1-root">
@@ -351,9 +368,15 @@ export default function Screen1Upload({ navigate }) {
                 <div
                   key={i}
                   className="recent-item"
-                  onClick={() => navigate(2)}
+                  onClick={() =>
+                    navigate("/dashboard", {
+                      state: {
+                        requestId: u.reqId,
+                      },
+                    })
+                  }
                 >
-                  <div className="recent-icon">{u.icon}</div>
+                  <div className="recent-icon">{u.type === "SANCTION"? "🏦":(u.type === "REGULATION" ? "📋":"📊")}</div>
                   <div className="recent-info">
                     <div className="recent-name">{u.name}</div>
                     <div className="recent-meta">
@@ -388,85 +411,6 @@ export default function Screen1Upload({ navigate }) {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function AIIllustration() {
-  return (
-    <div className="ai-illus">
-      {/* Central brain */}
-      <div className="ai-center">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1-4 4 4 4 0 0 1-4-4V6a4 4 0 0 1 4-4z"
-            fill="url(#grad1)"
-            opacity="0.8"
-          />
-          <path
-            d="M9.5 11.5c-2 0-4 1.5-4 3.5v1c0 2 1.5 4 4 4h5c2.5 0 4-2 4-4v-1c0-2-2-3.5-4-3.5"
-            stroke="url(#grad1)"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <defs>
-            <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#2563EB" />
-              <stop offset="100%" stopColor="#7C3AED" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <span className="ai-label">AI Engine</span>
-      </div>
-
-      {/* Connected nodes */}
-      <div className="ai-nodes">
-        {[
-          "Regulation\nParser",
-          "Risk\nAnalyzer",
-          "Impact\nMapper",
-          "Report\nGenerator",
-          "Sanctions\nChecker",
-          "Compliance\nAdvisor",
-        ].map((label, i) => {
-          const angle = (i / 6) * 2 * Math.PI - Math.PI / 2;
-          const radius = 90;
-          const x = 50 + radius * Math.cos(angle);
-          const y = 50 + radius * Math.sin(angle);
-          const colors = [
-            "#2563EB",
-            "#7C3AED",
-            "#059669",
-            "#D97706",
-            "#DC2626",
-            "#0891B2",
-          ];
-          return (
-            <div
-              key={i}
-              className="ai-node"
-              style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                borderColor: colors[i],
-                color: colors[i],
-              }}
-            >
-              {label.split("\n").map((l, j) => (
-                <span
-                  key={j}
-                  style={{ display: "block", fontSize: 9, lineHeight: 1.2 }}
-                >
-                  {l}
-                </span>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Pulse ring */}
-      <div className="ai-pulse-ring"></div>
     </div>
   );
 }

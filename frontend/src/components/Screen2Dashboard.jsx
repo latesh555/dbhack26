@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react';
+import {useLocation} from "react-router-dom";
 import './Screen2Dashboard.css'
+import backend from './backend.js';
 
 const HEATMAP_ROWS = ['Compliance', 'Payments', 'Trade Finance', 'Operations', 'Technology', 'AML']
 const HEATMAP_COLS = ['Low', 'Medium', 'High', 'Critical']
@@ -22,14 +24,6 @@ const heatmapLabels = [
   [['Alert Low', '3'], ['AML Gap', '10'], ['STR Miss', '18'], ['Fine Risk', '26']],
 ]
 
-const recommendations = [
-  { priority: 1, text: 'Refresh sanctions watchlist immediately.', confidence: 98, color: 'red', bar: '#DC2626' },
-  { priority: 2, text: 'Pause transactions involving newly sanctioned entities.', confidence: 96, color: 'red', bar: '#DC2626' },
-  { priority: 3, text: 'Run retrospective screening for the last 30 days.', confidence: 91, color: 'amber', bar: '#D97706' },
-  { priority: 4, text: 'Notify Trade Finance Team immediately.', confidence: 89, color: 'amber', bar: '#D97706' },
-  { priority: 5, text: 'Deploy updated screening rules within 24 hours.', confidence: 85, color: 'blue', bar: '#2563EB' },
-]
-
 const actions = [
   { emoji: '🎯', label: 'Generate Jira Stories', desc: 'Auto-create sprint tickets', color: 'action-color-blue' },
   { emoji: '📊', label: 'Executive Report', desc: 'C-suite ready PDF', color: 'action-color-purple' },
@@ -38,15 +32,33 @@ const actions = [
   { emoji: '💾', label: 'Export Analysis', desc: 'JSON / CSV / PDF', color: 'action-color-blue' },
 ]
 
-const activities = [
-  { type: 'activity-ai', text: 'AI completed impact analysis — 98% confidence', time: '2 mins ago' },
-  { type: 'activity-system', text: 'Sanctions watchlist cross-referenced (42 entities)', time: '3 mins ago' },
-  { type: 'activity-upload', text: 'Document uploaded — OFAC SDN Update July 2026', time: '5 mins ago' },
-  { type: 'activity-complete', text: 'Engineering impact mapped — 23 story points', time: '7 mins ago' },
-]
+
 
 export default function Screen2Dashboard({ navigate }) {
   const [engExpanded, setEngExpanded] = useState(false)
+  const location = useLocation();
+  const requestId = location?.state?.requestId;
+  const [summary,setSummary] = useState();
+  const [customer,setCustomer] = useState();
+  const [enterprise,setEnterprise] = useState();
+  const [business,setBusiness] = useState();
+
+  const fetchDetails = async(requestId) => {
+    try{
+      console.log("req",requestId);
+      const response = await backend.getSummary(requestId);
+      setSummary(response?.data?.summary);
+      setCustomer(response?.data?.customer);
+      setEnterprise(response?.data?.enterprise);
+      setBusiness(response?.data?.business);
+    }catch(e){
+      console.log(e);
+    }
+  };
+
+useEffect(() => {
+  fetchDetails(requestId);
+}, [requestId]);
 
   return (
     <div className="s2-root">
@@ -54,19 +66,19 @@ export default function Screen2Dashboard({ navigate }) {
         {/* Banner */}
         <div className="s2-banner animate-fadein">
           <div className="banner-left">
-            <div className="banner-type-badge">⚠️ OFAC Sanctions Update — CRITICAL</div>
-            <div className="banner-title">OFAC SDN Update — July 22, 2026</div>
+            <div className="banner-type-badge">⚠️ {summary?.name}</div>
+            <div className="banner-title">{summary?.name}</div>
             <div className="banner-summary">
               <span className="summary-sparkle">✦</span>
-              <strong>AI Summary:</strong> "This update introduces <strong>42 newly sanctioned entities</strong>, expands restrictions on the energy sector, and requires immediate updates to transaction screening rules. Immediate remediation required across 12 enterprise applications."
+              <strong>Summary:</strong> {summary?.summary}
             </div>
             <div className="banner-meta">
               {[
-                { label: 'Document Type', value: 'OFAC Sanctions Update', cls: '' },
-                { label: 'Published', value: '22 July 2026', cls: '' },
-                { label: 'Effective', value: 'Immediate', cls: 'effective' },
-                { label: 'Deadline', value: '31 Oct 2026', cls: '' },
-                { label: 'Severity', value: '🔴 Critical', cls: 'critical' },
+                { label: 'Document Type', value: summary?.type, cls: '' },
+                { label: 'Published', value: summary?.published, cls: '' },
+                { label: 'Effective', value: summary?.effectiveDate, cls: 'effective' },
+                { label: 'Deadline', value: summary?.deadline, cls: '' },
+                { label: 'Severity', value: summary?.severity, cls: 'critical' },
               ].map((m, i) => (
                 <div key={i} className="meta-item">
                   <span className="meta-label">{m.label}</span>
@@ -93,14 +105,14 @@ export default function Screen2Dashboard({ navigate }) {
               </div>
               <div className="impact-grid">
                 {[
-                  { icon: '💻', label: 'Applications Impacted', val: 20, color: 'color-blue' },
-                  { icon: '📉', label: 'Trade Finance', val: 'High', color: 'color-red' },
-                  { icon: '📑', label: 'SWIFT Gateway', val: 'Low', color: 'color-green' },
-                  { icon: '💳', label: 'AML Monitoring', val: 'Low', color: 'color-green' },
-                  { icon: '🧾', label: 'Trade Settlement', val: 8, color: 'color-purple' },
-                  { icon: '💱', label: 'Payment Flows', val: 55, color: 'color-blue' },
-                  { icon: '🏦', label: 'Readiness Score', val: '68%', color: 'color-amber' },
-                  { icon: '💶', label: 'Compliance Cost', val: '€348', color: 'color-amber' },
+                  { icon: '💻', label: 'Applications Impacted', val: enterprise?.applications, color: 'color-blue' },
+                  { icon: '📉', label: 'Trade Finance', val: enterprise?.tradeFinanceRisk, color: 'color-red' },
+                  { icon: '📑', label: 'SWIFT Gateway', val: enterprise?.swiftGatewayRisk, color: 'color-green' },
+                  { icon: '💳', label: 'AML Monitoring', val: enterprise?.amlMonitoring, color: 'color-green' },
+                  { icon: '🧾', label: 'Trade Settlement', val: enterprise?.tradeSettlementsAffected, color: 'color-purple' },
+                  { icon: '💱', label: 'Payment Flows', val: enterprise?.tradeSettlementsAffected, color: 'color-blue' },
+                  { icon: '🏦', label: 'Readiness Score', val: enterprise?.tradeSettlementsAffected, color: 'color-amber' },
+                  { icon: '💶', label: 'Compliance Cost', val: enterprise?.tradeSettlementsAffected, color: 'color-amber' },
                 ].map((c, i) => (
                   <div key={i} className={`impact-chip ${c.color}`}>
                     <span className="impact-chip-icon">{c.icon}</span>
@@ -122,12 +134,12 @@ export default function Screen2Dashboard({ navigate }) {
               </div>
               <div className="kpi-grid">
                 {[
-                  { icon: '👤', label: 'Potential Customer Matches', val: '128', trend: '▲ 42', color: 'color-red' },
-                  { icon: '⏳', label: 'Pending Payments', val: '186', trend: '⚠ Hold', color: 'color-amber' },
-                  { icon: '📦', label: 'Trade Finance Deals', val: '41', trend: 'Review', color: 'color-amber' },
-                  { icon: '🏦', label: 'Corporate Accounts', val: '22', trend: 'Flag', color: 'color-red' },
-                  { icon: '⚡', label: 'SWIFT Messages', val: '94', trend: 'Block', color: 'color-blue' },
-                  { icon: '🔄', label: 'Transactions to Rescreen', val: '38,241', trend: 'Queue', color: 'color-purple' },
+                  { icon: '👤', label: 'Potential Customer Matches', val: customer?.matches, trend: '▲ 42', color: 'color-red' },
+                  { icon: '⏳', label: 'Pending Payments', val: customer?.pendingPayments, trend: '⚠ Hold', color: 'color-amber' },
+                  { icon: '📦', label: 'Trade Finance Deals', val: customer?.tradeFinanceDeals, trend: 'Review', color: 'color-amber' },
+                  { icon: '🏦', label: 'Corporate Accounts', val: customer?.corporateAccounts, trend: 'Flag', color: 'color-red' },
+                  { icon: '⚡', label: 'SWIFT Messages', val: customer?.swiftMessages, trend: 'Block', color: 'color-blue' },
+                  { icon: '🔄', label: 'Transactions to Rescreen', val: customer?.transactionsToRescreen, trend: 'Queue', color: 'color-purple' },
                 ].map((k, i) => (
                   <div key={i} className="kpi-card">
                     <div className="kpi-top">
@@ -155,12 +167,12 @@ export default function Screen2Dashboard({ navigate }) {
               </div>
               <div className="biz-kpi-grid">
                 {[
-                  { icon: '💵', label: 'Revenue at Risk', val: '$145K/day', sub: 'Est. daily exposure', cls: 'biz-bad', valCls: 'biz-val-red' },
-                  { icon: '⏱️', label: 'Settlement Delay', val: 'High', sub: 'T+2 → T+5 risk', cls: 'biz-warn', valCls: 'biz-val-amber' },
-                  { icon: '📋', label: 'Operational Reviews', val: '620', sub: 'Manual reviews queued', cls: '', valCls: '' },
-                  { icon: '🕐', label: 'Investigation Hours', val: '190', sub: 'Est. FTE hours', cls: 'biz-warn', valCls: 'biz-val-amber' },
-                  { icon: '🔴', label: 'Business Criticality', val: 'Critical', sub: 'Board escalation needed', cls: 'biz-bad', valCls: 'biz-val-red' },
-                  { icon: '💳', label: 'Payment Disruption', val: '18%', sub: 'Of daily payment volume', cls: 'biz-warn', valCls: 'biz-val-amber' },
+                  { icon: '💵', label: 'Revenue at Risk', val: business?.revenueImpactPerDay, sub: 'Est. daily exposure', cls: 'biz-bad', valCls: 'biz-val-red' },
+                  { icon: '⏱️', label: 'Settlement Delay', val: business?.settlementDelay, sub: 'T+2 → T+5 risk', cls: 'biz-warn', valCls: 'biz-val-amber' },
+                  { icon: '📋', label: 'Operational Reviews', val: business?.operationsReviewCount, sub: 'Manual reviews queued', cls: '', valCls: '' },
+                  { icon: '🕐', label: 'Investigation Hours', val: business?.investigationHours, sub: 'Est. FTE hours', cls: 'biz-warn', valCls: 'biz-val-amber' },
+                  { icon: '🔴', label: 'Business Criticality', val: business?.criticality, sub: 'Board escalation needed', cls: 'biz-bad', valCls: 'biz-val-red' },
+                  { icon: '💳', label: 'Payment Disruption', val: business?.paymentDisruptionPercentage, sub: 'Of daily payment volume', cls: 'biz-warn', valCls: 'biz-val-amber' },
                 ].map((b, i) => (
                   <div key={i} className={`biz-kpi-card ${b.cls}`}>
                     <div className="biz-kpi-icon">{b.icon}</div>

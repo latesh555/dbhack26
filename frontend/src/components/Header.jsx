@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useState } from 'react';
+import {useNavigate} from "react-router-dom";
 import './Header.css'
 
-export default function Header({ navigate, screen }) {
+export default function Header() {
   const [searchVal, setSearchVal] = useState('')
-
+  const navigate = useNavigate();
   return (
     <header className="header">
       <div className="header-inner">
         {/* Logo */}
-        <div className="header-logo" onClick={() => navigate(1)}>
+        <div className="header-logo" onClick={() => navigate("/")}>
           <div className="logo-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white"/>
@@ -39,15 +40,6 @@ export default function Header({ navigate, screen }) {
 
         {/* Right actions */}
         <div className="header-actions">
-          {/* Nav tabs */}
-          <nav className="header-nav">
-            <button className={`nav-tab ${screen === 2 ? 'active' : ''}`} onClick={() => navigate(2)}>
-              Dashboard
-            </button>
-            <button className={`nav-tab ${screen === 3 ? 'active' : ''}`} onClick={() => navigate(3)}>
-              Engineering
-            </button>
-          </nav>
 
           {/* Badge */}
           <div className="notif-btn">
