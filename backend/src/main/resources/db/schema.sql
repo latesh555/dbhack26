@@ -131,6 +131,97 @@ CREATE TABLE IF NOT EXISTS engineering_tasks (
 CREATE INDEX IF NOT EXISTS idx_engineering_tasks_plan_id ON engineering_tasks(engineering_plan_id);
 
 -- ============================================================
+-- Engineering Delivery Planner Module
+-- ============================================================
+CREATE TABLE IF NOT EXISTS delivery_plans (
+    id                              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    enterprise_impact_assessment_id UUID NOT NULL REFERENCES enterprise_impact_assessments(id) ON DELETE CASCADE,
+    regulation_id                   UUID NOT NULL REFERENCES regulations(id) ON DELETE CASCADE,
+    status                          VARCHAR(50) NOT NULL DEFAULT 'GENERATING',
+    generated_at                    TIMESTAMP,
+    affected_apis                   TEXT,
+    affected_microservices          TEXT,
+    testing_strategy                TEXT,
+    deployment_strategy             TEXT,
+    rollback_strategy               TEXT,
+    production_validation_checklist TEXT,
+    jira_sync_reference             VARCHAR(255),
+    error_message                   TEXT,
+    created_at                      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_plans_regulation_id ON delivery_plans(regulation_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_plans_status ON delivery_plans(status);
+
+CREATE TABLE IF NOT EXISTS delivery_epics (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    delivery_plan_id    UUID NOT NULL REFERENCES delivery_plans(id) ON DELETE CASCADE,
+    epic_key            VARCHAR(50) NOT NULL,
+    title               VARCHAR(500) NOT NULL,
+    description         TEXT,
+    priority            VARCHAR(50) NOT NULL,
+    owner_team          VARCHAR(255) NOT NULL,
+    total_story_points  INTEGER,
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_epics_plan_id ON delivery_epics(delivery_plan_id);
+
+CREATE TABLE IF NOT EXISTS delivery_features (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    epic_id         UUID NOT NULL REFERENCES delivery_epics(id) ON DELETE CASCADE,
+    feature_key     VARCHAR(50) NOT NULL,
+    title           VARCHAR(500) NOT NULL,
+    description     TEXT,
+    priority        VARCHAR(50) NOT NULL,
+    owner_team      VARCHAR(255) NOT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_features_epic_id ON delivery_features(epic_id);
+
+CREATE TABLE IF NOT EXISTS delivery_user_stories (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    feature_id          UUID NOT NULL REFERENCES delivery_features(id) ON DELETE CASCADE,
+    story_key           VARCHAR(50) NOT NULL,
+    title               VARCHAR(500) NOT NULL,
+    description         TEXT NOT NULL,
+    priority            VARCHAR(50) NOT NULL,
+    story_points        INTEGER NOT NULL,
+    owner_team          VARCHAR(255) NOT NULL,
+    dependencies        TEXT,
+    affected_components TEXT,
+    acceptance_criteria TEXT,
+    testing_checklist   TEXT,
+    status              VARCHAR(50) NOT NULL DEFAULT 'TODO',
+    jira_issue_key      VARCHAR(100),
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_user_stories_feature_id ON delivery_user_stories(feature_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_user_stories_status ON delivery_user_stories(status);
+CREATE INDEX IF NOT EXISTS idx_delivery_user_stories_story_key ON delivery_user_stories(story_key);
+
+CREATE TABLE IF NOT EXISTS delivery_story_tasks (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_story_id   UUID NOT NULL REFERENCES delivery_user_stories(id) ON DELETE CASCADE,
+    task_key        VARCHAR(50) NOT NULL,
+    title           VARCHAR(500) NOT NULL,
+    description     TEXT,
+    priority        VARCHAR(50) NOT NULL,
+    owner_team      VARCHAR(255) NOT NULL,
+    status          VARCHAR(50) NOT NULL DEFAULT 'TODO',
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_story_tasks_story_id ON delivery_story_tasks(user_story_id);
+
+-- ============================================================
 -- Executive Reporting Module
 -- ============================================================
 CREATE TABLE IF NOT EXISTS executive_reports (

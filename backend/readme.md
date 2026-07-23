@@ -135,7 +135,23 @@ Consumes **structured `RegulatoryIntelligence` JSON** from a completed regulatio
 | GET    | `/impacts/{id}`                       | Get by ID          |
 | PUT    | `/impacts/{id}`                       | Update             |
 
-### Engineering Planning
+### Engineering Delivery Planner Agent
+
+Transforms a completed **EnterpriseImpactAssessment** into an executable delivery plan. Does not re-run regulation or impact analysis.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/regulations/{regulationId}/delivery-plan/generate` | Generate delivery plan |
+| GET | `/regulations/{regulationId}/delivery-plan` | Get delivery plan |
+| GET | `/regulations/{regulationId}/delivery-plan/epics` | Get epics |
+| GET | `/regulations/{regulationId}/delivery-plan/user-stories` | Get user stories |
+| PATCH | `/regulations/{regulationId}/delivery-plan/user-stories/{storyId}/status` | Update story status |
+
+**Prerequisite:** Completed enterprise impact assessment (`POST .../enterprise-impact/analyze`).
+
+**Output schema:** Epic → Features → User Stories → Tasks, plus testing/deployment/rollback strategies and production validation checklist. Mock Jira sync via `JiraAdapter`.
+
+### Engineering Planning (Legacy CRUD)
 
 | Method | Endpoint                          | Description     |
 |--------|-----------------------------------|-----------------|
