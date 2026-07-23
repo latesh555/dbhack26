@@ -3,10 +3,7 @@ package com.regintel.ai.regulationintelligence.dto;
 import com.regintel.ai.regulationintelligence.entity.AnalysisStatus;
 import com.regintel.ai.regulationintelligence.entity.RiskLevel;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -28,8 +25,8 @@ public final class RegulationAnalysisDto {
         private AnalysisStatus status;
     }
 
+    @EqualsAndHashCode(callSuper = true)
     @Data
-    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateRequest extends Request {

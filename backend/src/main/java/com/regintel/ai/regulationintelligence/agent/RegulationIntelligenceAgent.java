@@ -57,7 +57,7 @@ public class RegulationIntelligenceAgent {
         List<RegulatoryRequirement> requirements = new ArrayList<>();
         int idx = 1;
 
-        if containsAny(content, "sanction", "ofac", "embargo", "watchlist")) {
+        if (containsAny(content, "sanction", "ofac", "embargo", "watchlist")) {
             requirements.add(requirement("REQ-" + idx++, "Enhanced sanctions screening",
                     "All cross-border payment and trade finance transactions must pass real-time sanctions screening.",
                     "Article 4.2", "Payment institutions shall screen transfers against updated sanctions lists."));

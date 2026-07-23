@@ -1,5 +1,7 @@
 package com.regintel.ai.enterpriseimpact.knowledge;
 
+import com.regintel.ai.enterpriseimpact.entity.ComponentType;
+import com.regintel.ai.enterpriseimpact.entity.ImpactCategory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
