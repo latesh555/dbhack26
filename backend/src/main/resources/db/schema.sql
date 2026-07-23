@@ -251,6 +251,9 @@ CREATE TABLE IF NOT EXISTS agent_workflows (
     regulation_id   UUID REFERENCES regulations(id) ON DELETE SET NULL,
     started_at      TIMESTAMP,
     completed_at    TIMESTAMP,
+    error_message   TEXT,
+    retry_count     INTEGER DEFAULT 0,
+    failed_step     VARCHAR(100),
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -275,3 +278,31 @@ CREATE TABLE IF NOT EXISTS agent_tasks (
 
 CREATE INDEX IF NOT EXISTS idx_agent_tasks_workflow_id ON agent_tasks(workflow_id);
 CREATE INDEX IF NOT EXISTS idx_agent_tasks_status ON agent_tasks(status);
+
+CREATE TABLE IF NOT EXISTS workflow_audit_logs (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workflow_id     UUID NOT NULL REFERENCES agent_workflows(id) ON DELETE CASCADE,
+    step_name       VARCHAR(100),
+    event_type      VARCHAR(50) NOT NULL,
+    message         TEXT,
+    details         TEXT,
+    recorded_at     TIMESTAMP NOT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_workflow_audit_logs_workflow_id ON workflow_audit_logs(workflow_id);
+
+CREATE TABLE IF NOT EXISTS executive_decision_reports (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workflow_id         UUID NOT NULL UNIQUE REFERENCES agent_workflows(id) ON DELETE CASCADE,
+    regulation_id       UUID NOT NULL REFERENCES regulations(id) ON DELETE CASCADE,
+    report_payload      TEXT NOT NULL,
+    overall_risk_score  DECIMAL(5, 2),
+    generated_at        TIMESTAMP,
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_executive_decision_reports_regulation_id
+    ON executive_decision_reports(regulation_id);

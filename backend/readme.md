@@ -170,7 +170,37 @@ Transforms a completed **EnterpriseImpactAssessment** into an executable deliver
 | GET    | `/reports/{id}`         | Get by ID       |
 | POST   | `/reports/{id}/publish` | Publish report  |
 
-### Agent Orchestration
+### RegIntel End-to-End Orchestration
+
+Single API to run the full agent pipeline with workflow tracking, audit trail, and retry support.
+
+```
+Upload Regulation → Regulation Intelligence → Enterprise Impact → Engineering Delivery → Executive Copilot → Final Analysis
+```
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/regintel/analyze` | Run full pipeline (returns `workflowId`) |
+| GET | `/regintel/{workflowId}` | Get complete aggregated analysis |
+| GET | `/regintel/{workflowId}/status` | Get workflow & step status |
+| GET | `/regintel/{workflowId}/executive-report` | Get executive report + full analysis |
+| POST | `/regintel/{workflowId}/retry` | Retry from failed step |
+
+**Example request:**
+```bash
+curl -X POST http://localhost:8080/api/v1/regintel/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "EU Sanctions Amendment 2026",
+    "source": "European Commission",
+    "jurisdiction": "EU",
+    "documentType": "DIRECTIVE",
+    "rawContent": "All cross-border SWIFT payment transactions must pass sanctions screening. Trade finance LC documentary checks required.",
+    "effectiveDate": "2026-09-01"
+  }'
+```
+
+### Agent Orchestration (Legacy)
 
 | Method | Endpoint                        | Description      |
 |--------|---------------------------------|------------------|
