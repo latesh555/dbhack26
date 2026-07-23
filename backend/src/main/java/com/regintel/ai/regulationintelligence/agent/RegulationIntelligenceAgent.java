@@ -1,190 +1,108 @@
 package com.regintel.ai.regulationintelligence.agent;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.regintel.ai.common.exception.BusinessException;
+import com.regintel.ai.llm.config.LlmProperties;
+import com.regintel.ai.llm.exception.LlmException;
+import com.regintel.ai.llm.service.LlmService;
 import com.regintel.ai.regulation.entity.Regulation;
-import com.regintel.ai.regulationintelligence.schema.RegulatoryDeadline;
 import com.regintel.ai.regulationintelligence.schema.RegulatoryIntelligence;
-import com.regintel.ai.regulationintelligence.schema.RegulatoryRequirement;
-import com.regintel.ai.regulationintelligence.schema.RequirementChange;
-import com.regintel.ai.regulationintelligence.schema.SourceReference;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class RegulationIntelligenceAgent {
 
+    private final LlmService llmService;
+    private final LlmProperties llmProperties;
+    private final HeuristicRegulationIntelligenceAnalyzer heuristicAnalyzer;
+    private final ObjectMapper objectMapper;
+    private final Validator validator;
+
     public RegulatoryIntelligence analyze(Regulation regulation) {
-        String content = regulation.getRawContent() != null
-                ? regulation.getRawContent().toLowerCase(Locale.ROOT)
-                : "";
-        String jurisdiction = regulation.getJurisdiction();
-        String severity = deriveSeverity(content);
+        if (regulation.getRawContent() == null || regulation.getRawContent().isBlank()) {
+            throw new BusinessException("Regulation has no content to analyze. Upload a document or provide rawContent.");
+        }
 
-        List<String> industries = deriveIndustries(content);
-        List<String> businessDomains = deriveBusinessDomains(content);
-        List<RegulatoryRequirement> newRequirements = deriveRequirements(content, regulation.getTitle());
-        List<RequirementChange> keyChanges = deriveKeyChanges(newRequirements);
+        if (llmService.isEnabled() && llmService.hasAvailableProvider()) {
+            try {
+                return analyzeWithLlm(regulation);
+            } catch (Exception ex) {
+                log.warn("LLM analysis failed for regulation {}: {}", regulation.getId(), ex.getMessage());
+                if (!llmProperties.isFallbackToHeuristics()) {
+                    throw ex instanceof BusinessException businessException
+                            ? businessException
+                            : new BusinessException("LLM analysis failed: " + ex.getMessage());
+                }
+            }
+        } else {
+            log.info("No LLM provider available; using heuristic analysis for regulation {}", regulation.getId());
+        }
 
-        return RegulatoryIntelligence.builder()
-                .documentType(regulation.getDocumentType())
-                .regulatoryAuthority(regulation.getSource())
-                .publicationDate(LocalDate.now())
-                .effectiveDate(regulation.getEffectiveDate())
-                .severity(severity)
-                .executiveSummary(buildExecutiveSummary(regulation, newRequirements.size()))
-                .keyChanges(keyChanges)
-                .newRequirements(newRequirements)
-                .removedRequirements(List.of())
-                .modifiedRequirements(List.of())
-                .deadlines(deriveDeadlines(regulation))
-                .jurisdictions(List.of(jurisdiction))
-                .industries(industries)
-                .sanctionsInformation(deriveSanctionsInfo(content))
-                .businessDomains(businessDomains)
-                .build();
+        return heuristicAnalyzer.analyze(regulation);
     }
 
-    private String buildExecutiveSummary(Regulation regulation, int requirementCount) {
-        return "Regulatory document '" + regulation.getTitle() + "' from " + regulation.getSource()
-                + " introduces " + requirementCount + " new requirement(s) affecting "
-                + regulation.getJurisdiction() + " operations. Immediate enterprise review is recommended.";
+    private RegulatoryIntelligence analyzeWithLlm(Regulation regulation) {
+        String systemPrompt = RegulationIntelligencePromptBuilder.systemPrompt();
+        String userPrompt = RegulationIntelligencePromptBuilder.userPrompt(regulation);
+
+        String json = llmService.completeJson(systemPrompt, userPrompt);
+        json = sanitizeJson(json);
+
+        try {
+            RegulatoryIntelligence intelligence = objectMapper.readValue(json, RegulatoryIntelligence.class);
+            enrichFromRegulation(intelligence, regulation);
+            validateIntelligence(intelligence);
+            log.info("LLM regulatory intelligence analysis completed for regulation {}", regulation.getId());
+            return intelligence;
+        } catch (JsonProcessingException ex) {
+            throw new BusinessException("LLM returned invalid JSON: " + ex.getOriginalMessage());
+        }
     }
 
-    private List<RegulatoryRequirement> deriveRequirements(String content, String title) {
-        List<RegulatoryRequirement> requirements = new ArrayList<>();
-        int idx = 1;
-
-        if (containsAny(content, "sanction", "ofac", "embargo", "watchlist")) {
-            requirements.add(requirement("REQ-" + idx++, "Enhanced sanctions screening",
-                    "All cross-border payment and trade finance transactions must pass real-time sanctions screening.",
-                    "Article 4.2", "Payment institutions shall screen transfers against updated sanctions lists."));
+    private void enrichFromRegulation(RegulatoryIntelligence intelligence, Regulation regulation) {
+        if (intelligence.getDocumentType() == null || intelligence.getDocumentType().isBlank()) {
+            intelligence.setDocumentType(regulation.getDocumentType());
         }
-        if (containsAny(content, "payment", "swift", "transfer", "settlement")) {
-            requirements.add(requirement("REQ-" + idx++, "Payment transaction reporting",
-                    "Payment processors must maintain enhanced audit trails for cross-border transfers.",
-                    "Article 5.1", "Payment records must be retained for regulatory audit purposes."));
+        if (intelligence.getRegulatoryAuthority() == null || intelligence.getRegulatoryAuthority().isBlank()) {
+            intelligence.setRegulatoryAuthority(regulation.getSource());
         }
-        if (containsAny(content, "trade", "letter of credit", "lc", "documentary", "import", "export")) {
-            requirements.add(requirement("REQ-" + idx++, "Trade finance compliance",
-                    "Trade finance workflows require updated documentary compliance checks.",
-                    "Article 7.1", "Documentary trade products require compliance attestation."));
+        if (intelligence.getEffectiveDate() == null) {
+            intelligence.setEffectiveDate(regulation.getEffectiveDate());
         }
-        if (containsAny(content, "kyc", "customer", "onboarding", "cdd", "identity")) {
-            requirements.add(requirement("REQ-" + idx++, "Customer due diligence enhancement",
-                    "Customer onboarding must include enhanced due diligence for high-risk jurisdictions.",
-                    "Article 3.3", "CDD procedures must be updated for corporate customers."));
+        if (intelligence.getJurisdictions() == null || intelligence.getJurisdictions().isEmpty()) {
+            intelligence.setJurisdictions(java.util.List.of(regulation.getJurisdiction()));
         }
-        if (containsAny(content, "aml", "anti-money", "suspicious", "monitoring")) {
-            requirements.add(requirement("REQ-" + idx++, "AML transaction monitoring",
-                    "Transaction monitoring thresholds must be recalibrated per updated regulatory guidance.",
-                    "Article 6.4", "Suspicious activity detection rules require recalibration."));
-        }
-        if (requirements.isEmpty()) {
-            requirements.add(requirement("REQ-001", "General regulatory compliance",
-                    "Enterprise systems must align with requirements defined in: " + title,
-                    "Section 1", content.length() > 200 ? content.substring(0, 200) : content));
-        }
-        return requirements;
     }
 
-    private RegulatoryRequirement requirement(
-            String id, String title, String description, String section, String supportingText) {
-        return RegulatoryRequirement.builder()
-                .requirementId(id)
-                .title(title)
-                .description(description)
-                .sourceReference(SourceReference.builder()
-                        .pageNumber(1)
-                        .section(section)
-                        .supportingText(supportingText)
-                        .confidenceScore(0.92)
-                        .build())
-                .build();
+    private void validateIntelligence(RegulatoryIntelligence intelligence) {
+        Set<ConstraintViolation<RegulatoryIntelligence>> violations = validator.validate(intelligence);
+        if (!violations.isEmpty()) {
+            String message = violations.stream()
+                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                    .collect(Collectors.joining("; "));
+            throw new LlmException("LLM output failed validation: " + message);
+        }
     }
 
-    private List<RequirementChange> deriveKeyChanges(List<RegulatoryRequirement> requirements) {
-        return requirements.stream()
-                .map(r -> RequirementChange.builder()
-                        .changeId("CHG-" + r.getRequirementId())
-                        .summary(r.getTitle())
-                        .changeType("NEW")
-                        .sourceReference(r.getSourceReference())
-                        .build())
-                .toList();
-    }
-
-    private List<RegulatoryDeadline> deriveDeadlines(Regulation regulation) {
-        LocalDate effective = regulation.getEffectiveDate() != null
-                ? regulation.getEffectiveDate()
-                : LocalDate.now().plusMonths(6);
-        return List.of(
-                RegulatoryDeadline.builder()
-                        .description("Compliance implementation deadline")
-                        .dueDate(effective)
-                        .affectedArea("Enterprise-wide")
-                        .build(),
-                RegulatoryDeadline.builder()
-                        .description("Internal readiness review")
-                        .dueDate(effective.minusMonths(1))
-                        .affectedArea("Compliance & Engineering")
-                        .build()
-        );
-    }
-
-    private String deriveSanctionsInfo(String content) {
-        if (containsAny(content, "sanction", "ofac", "embargo")) {
-            return "Updated sanctions list screening requirements apply to all cross-border payment "
-                    + "and trade finance activities. OFAC-aligned screening recalibration required.";
-        }
-        return null;
-    }
-
-    private String deriveSeverity(String content) {
-        if (containsAny(content, "sanction", "critical", "mandatory", "immediate")) {
-            return "CRITICAL";
-        }
-        if (containsAny(content, "payment", "aml", "compliance", "required")) {
-            return "HIGH";
-        }
-        return "MEDIUM";
-    }
-
-    private List<String> deriveIndustries(String content) {
-        List<String> industries = new ArrayList<>();
-        industries.add("Banking");
-        if (containsAny(content, "trade", "finance", "lc")) {
-            industries.add("Trade Finance");
-        }
-        if (containsAny(content, "payment", "swift")) {
-            industries.add("Payments");
-        }
-        return industries;
-    }
-
-    private List<String> deriveBusinessDomains(String content) {
-        List<String> domains = new ArrayList<>();
-        domains.add("Compliance");
-        if (containsAny(content, "payment", "swift", "transfer")) {
-            domains.add("Payments");
-        }
-        if (containsAny(content, "trade", "lc", "documentary")) {
-            domains.add("Trade Finance");
-        }
-        if (containsAny(content, "customer", "kyc")) {
-            domains.add("Customer Lifecycle");
-        }
-        return domains;
-    }
-
-    private boolean containsAny(String content, String... keywords) {
-        for (String keyword : keywords) {
-            if (content.contains(keyword)) {
-                return true;
+    private String sanitizeJson(String json) {
+        String trimmed = json.trim();
+        if (trimmed.startsWith("```")) {
+            int start = trimmed.indexOf('\n');
+            int end = trimmed.lastIndexOf("```");
+            if (start >= 0 && end > start) {
+                return trimmed.substring(start + 1, end).trim();
             }
         }
-        return false;
+        return trimmed;
     }
 }

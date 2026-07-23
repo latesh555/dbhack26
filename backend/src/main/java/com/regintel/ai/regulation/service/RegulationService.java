@@ -9,16 +9,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegulationService {
 
+    private static final int PREVIEW_LENGTH = 500;
+
     private final RegulationRepository regulationRepository;
+    private final DocumentTextExtractionService documentTextExtractionService;
 
     @Transactional
     public RegulationDto.Response create(RegulationDto.Request request) {
@@ -33,6 +38,32 @@ public class RegulationService {
                 .effectiveDate(request.getEffectiveDate())
                 .build();
         return toResponse(regulationRepository.save(regulation));
+    }
+
+    @Transactional
+    public RegulationDto.UploadResponse createFromUpload(
+            MultipartFile file,
+            String title,
+            String source,
+            String jurisdiction,
+            String documentType,
+            LocalDate effectiveDate) {
+        log.info("Creating regulation from uploaded file: {}", file.getOriginalFilename());
+        String extractedText = documentTextExtractionService.extractText(file);
+        String mediaType = documentTextExtractionService.detectMediaType(file);
+
+        Regulation regulation = Regulation.builder()
+                .title(title)
+                .source(source)
+                .jurisdiction(jurisdiction)
+                .documentType(documentType)
+                .rawContent(extractedText)
+                .status(RegulationStatus.DRAFT)
+                .effectiveDate(effectiveDate)
+                .build();
+
+        Regulation saved = regulationRepository.save(regulation);
+        return toUploadResponse(saved, mediaType);
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +116,29 @@ public class RegulationService {
                 .rawContent(regulation.getRawContent())
                 .status(regulation.getStatus())
                 .effectiveDate(regulation.getEffectiveDate())
+                .createdAt(regulation.getCreatedAt())
+                .updatedAt(regulation.getUpdatedAt())
+                .build();
+    }
+
+    private RegulationDto.UploadResponse toUploadResponse(Regulation regulation, String mediaType) {
+        String rawContent = regulation.getRawContent() != null ? regulation.getRawContent() : "";
+        String preview = rawContent.length() > PREVIEW_LENGTH
+                ? rawContent.substring(0, PREVIEW_LENGTH) + "..."
+                : rawContent;
+
+        return RegulationDto.UploadResponse.builder()
+                .id(regulation.getId())
+                .title(regulation.getTitle())
+                .source(regulation.getSource())
+                .jurisdiction(regulation.getJurisdiction())
+                .documentType(regulation.getDocumentType())
+                .rawContent(rawContent)
+                .status(regulation.getStatus())
+                .effectiveDate(regulation.getEffectiveDate())
+                .detectedMediaType(mediaType)
+                .extractedTextLength(rawContent.length())
+                .extractedTextPreview(preview)
                 .createdAt(regulation.getCreatedAt())
                 .updatedAt(regulation.getUpdatedAt())
                 .build();

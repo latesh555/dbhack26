@@ -9,6 +9,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
+import com.regintel.ai.llm.exception.LlmException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,6 +47,24 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 fieldErrors
         );
+    }
+
+    @ExceptionHandler(LlmException.class)
+    public ResponseEntity<ErrorResponse> handleLlmException(
+            LlmException ex, HttpServletRequest request) {
+        log.warn("LLM error: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, ex.getMessage(), request.getRequestURI(), null);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        log.warn("Upload size exceeded: {}", ex.getMessage());
+        return buildErrorResponse(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "Uploaded file exceeds the maximum allowed size of 25MB",
+                request.getRequestURI(),
+                null);
     }
 
     @ExceptionHandler(Exception.class)

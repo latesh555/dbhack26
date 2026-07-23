@@ -11,9 +11,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +33,26 @@ public class RegIntelOrchestrationController {
     public ResponseEntity<ApiResponse<RegIntelAnalysisResponse>> analyze(
             @Valid @RequestBody RegIntelAnalyzeRequest request) {
         RegIntelAnalysisResponse response = orchestrationService.analyze(request);
+        if (response.getStatus() == WorkflowStatus.COMPLETED) {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(response, "RegIntel analysis completed successfully"));
+        }
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ApiResponse.success(response, "RegIntel analysis failed — use workflowId to retry"));
+    }
+
+    @PostMapping(value = "/analyze/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload a regulation file and run full RegIntel analysis pipeline",
+            description = "Extracts text from PDF/DOCX/TXT and runs Intelligence → Impact → Delivery → Executive Copilot")
+    public ResponseEntity<ApiResponse<RegIntelAnalysisResponse>> analyzeUpload(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam("source") String source,
+            @RequestParam("jurisdiction") String jurisdiction,
+            @RequestParam("documentType") String documentType,
+            @RequestParam(value = "effectiveDate", required = false) LocalDate effectiveDate) {
+        RegIntelAnalysisResponse response = orchestrationService.analyzeFromUpload(
+                file, title, source, jurisdiction, documentType, effectiveDate);
         if (response.getStatus() == WorkflowStatus.COMPLETED) {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success(response, "RegIntel analysis completed successfully"));

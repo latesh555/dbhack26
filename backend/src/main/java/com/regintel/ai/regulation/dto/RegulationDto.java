@@ -58,4 +58,24 @@ public final class RegulationDto {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
     }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UploadResponse {
+        private UUID id;
+        private String title;
+        private String source;
+        private String jurisdiction;
+        private String documentType;
+        private String rawContent;
+        private RegulationStatus status;
+        private LocalDate effectiveDate;
+        private String detectedMediaType;
+        private int extractedTextLength;
+        private String extractedTextPreview;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+    }
 }

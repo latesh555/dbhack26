@@ -8,9 +8,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,13 +25,28 @@ public class RegulationController {
 
     private final RegulationService regulationService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Create a new regulation document")
     public ResponseEntity<ApiResponse<RegulationDto.Response>> create(
             @Valid @RequestBody RegulationDto.Request request) {
         RegulationDto.Response response = regulationService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Regulation created successfully"));
+    }
+
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload a regulatory document file and extract text content")
+    public ResponseEntity<ApiResponse<RegulationDto.UploadResponse>> upload(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam("source") String source,
+            @RequestParam("jurisdiction") String jurisdiction,
+            @RequestParam("documentType") String documentType,
+            @RequestParam(value = "effectiveDate", required = false) LocalDate effectiveDate) {
+        RegulationDto.UploadResponse response = regulationService.createFromUpload(
+                file, title, source, jurisdiction, documentType, effectiveDate);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Document uploaded and text extracted successfully"));
     }
 
     @GetMapping

@@ -29,11 +29,15 @@ import com.regintel.ai.regulationintelligence.entity.RegulationAnalysis;
 import com.regintel.ai.regulationintelligence.schema.RegulatoryIntelligence;
 import com.regintel.ai.regulationintelligence.service.RegulationIntelligenceAgentService;
 import com.regintel.ai.regulationintelligence.service.RegulatoryIntelligenceReader;
+import com.regintel.ai.regulation.service.DocumentTextExtractionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -55,6 +59,7 @@ public class RegIntelOrchestrationService {
     private final EngineeringDeliveryPlannerService deliveryPlannerService;
     private final ExecutiveDecisionCopilotAgent executiveCopilotAgent;
     private final ObjectMapper objectMapper;
+    private final DocumentTextExtractionService documentTextExtractionService;
 
     @Transactional(noRollbackFor = BusinessException.class)
     public RegIntelAnalysisResponse analyze(RegIntelAnalyzeRequest request) {
@@ -75,6 +80,27 @@ public class RegIntelOrchestrationService {
         workflowRepository.save(workflow);
 
         return executePipeline(workflow, regulation);
+    }
+
+    @Transactional(noRollbackFor = BusinessException.class)
+    public RegIntelAnalysisResponse analyzeFromUpload(
+            MultipartFile file,
+            String title,
+            String source,
+            String jurisdiction,
+            String documentType,
+            LocalDate effectiveDate) {
+        String rawContent = documentTextExtractionService.extractText(file);
+
+        RegIntelAnalyzeRequest request = new RegIntelAnalyzeRequest();
+        request.setTitle(title);
+        request.setSource(source);
+        request.setJurisdiction(jurisdiction);
+        request.setDocumentType(documentType);
+        request.setRawContent(rawContent);
+        request.setEffectiveDate(effectiveDate);
+
+        return analyze(request);
     }
 
     @Transactional(noRollbackFor = BusinessException.class)
